@@ -4,6 +4,7 @@ const csv = require("csv-parser");
 const formidable = require("formidable");
 const fs = require("fs-extra");
 const path = require("path");
+const fetch = require("node-fetch");
 
 // Supabase configuration
 const supabaseUrl = "https://tphpqptsskwnjtlsgrwj.supabase.co";
@@ -143,6 +144,52 @@ async function processCSV(filePath) {
   });
 }
 
+// Function to process XLSX file from URL
+async function processXLSXFromUrl(fileUrl) {
+  try {
+    const response = await fetch(fileUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to download file: ${response.statusText}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const workbook = XLSX.read(arrayBuffer, { type: "array" });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+    if (jsonData.length === 0) {
+      throw new Error("No data found in the file");
+    }
+
+    const headers = jsonData[0];
+    const rows = jsonData.slice(1);
+
+    return { headers, rows };
+  } catch (error) {
+    throw new Error(`Error processing XLSX file: ${error.message}`);
+  }
+}
+
+// Function to process CSV file from URL
+async function processCSVFromUrl(fileUrl) {
+  try {
+    const response = await fetch(fileUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to download file: ${response.statusText}`);
+    }
+    const text = await response.text();
+    const lines = text.split("\n");
+    const headers = lines[0].split(",").map((h) => h.trim());
+    const rows = lines.slice(1).map((line) =>
+      line.split(",").map((cell) => cell.trim())
+    );
+
+    return { headers, rows };
+  } catch (error) {
+    throw new Error(`Error processing CSV file: ${error.message}`);
+  }
+}
+
 // Function to create JSON batches with progress tracking
 async function createJSONBatches(rows, headers, jobId, batchSize = 1000) {
   const batches = [];
@@ -279,47 +326,6 @@ function setCORSHeaders(res) {
   );
 }
 
-// Function to process XLSX file from URL
-async function processXLSXFromUrl(fileUrl) {
-  try {
-    const response = await fetch(fileUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to download file: ${response.statusText}`);
-    }
-    const arrayBuffer = await response.arrayBuffer();
-    const workbook = XLSX.read(arrayBuffer, { type: "array" });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-    if (jsonData.length === 0) {
-      throw new Error("No data found in the file");
-    }
-    const headers = jsonData[0];
-    const rows = jsonData.slice(1);
-    return { headers, rows };
-  } catch (error) {
-    throw new Error(`Error processing XLSX file: ${error.message}`);
-  }
-}
-
-// Function to process CSV file from URL
-async function processCSVFromUrl(fileUrl) {
-  try {
-    const response = await fetch(fileUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to download file: ${response.statusText}`);
-    }
-    const text = await response.text();
-    const lines = text.split("\n");
-    const headers = lines[0].split(",").map((h) => h.trim());
-    const rows = lines
-      .slice(1)
-      .map((line) => line.split(",").map((cell) => cell.trim()));
-    return { headers, rows };
-  } catch (error) {
-    throw new Error(`Error processing CSV file: ${error.message}`);
-  }
-}
 
 // Function to handle Supabase Storage URL uploads
 async function handleSupabaseStorageUpload(

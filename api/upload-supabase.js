@@ -114,9 +114,9 @@ async function processXLSXFromUrl(fileUrl) {
     if (!response.ok) {
       throw new Error(`Failed to download file: ${response.statusText}`);
     }
-    
+
     const arrayBuffer = await response.arrayBuffer();
-    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+    const workbook = XLSX.read(arrayBuffer, { type: "array" });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
@@ -141,12 +141,14 @@ async function processCSVFromUrl(fileUrl) {
     if (!response.ok) {
       throw new Error(`Failed to download file: ${response.statusText}`);
     }
-    
+
     const text = await response.text();
-    const lines = text.split('\n');
-    const headers = lines[0].split(',').map(h => h.trim());
-    const rows = lines.slice(1).map(line => line.split(',').map(cell => cell.trim()));
-    
+    const lines = text.split("\n");
+    const headers = lines[0].split(",").map((h) => h.trim());
+    const rows = lines
+      .slice(1)
+      .map((line) => line.split(",").map((cell) => cell.trim()));
+
     return { headers, rows };
   } catch (error) {
     throw new Error(`Error processing CSV file: ${error.message}`);
@@ -284,13 +286,14 @@ export default async function handler(req, res) {
     const { fileUrl, fileName, fileType } = req.body;
 
     if (!fileUrl) {
-      return res.status(400).json({ 
-        error: "No file URL provided. Please upload file to Supabase Storage first.",
+      return res.status(400).json({
+        error:
+          "No file URL provided. Please upload file to Supabase Storage first.",
         instructions: {
           step1: "Upload your file to Supabase Storage using the frontend",
           step2: "Get the public URL of the uploaded file",
-          step3: "Send the URL to this endpoint"
-        }
+          step3: "Send the URL to this endpoint",
+        },
       });
     }
 
@@ -316,7 +319,7 @@ export default async function handler(req, res) {
 
     // Process the file based on type
     let headers, rows;
-    const fileExtension = fileType || fileName?.split('.').pop()?.toLowerCase();
+    const fileExtension = fileType || fileName?.split(".").pop()?.toLowerCase();
 
     if (fileExtension === "xlsx") {
       ({ headers, rows } = await processXLSXFromUrl(fileUrl));
