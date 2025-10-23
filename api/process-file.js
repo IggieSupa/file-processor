@@ -1,11 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
-import XLSX from "xlsx";
-import csv from "csv-parser";
-import fs from "fs-extra";
-import path from "path";
-import fetch from "node-fetch";
-
-// Use require for formidable as it doesn't support ES modules properly - Fixed
+const { createClient } = require("@supabase/supabase-js");
+const XLSX = require("xlsx");
+const csv = require("csv-parser");
+const fs = require("fs-extra");
+const path = require("path");
+const fetch = require("node-fetch");
 const formidable = require("formidable").default;
 
 // Supabase configuration
@@ -20,7 +18,7 @@ const jobs = global.jobs || new Map();
 global.jobs = jobs;
 
 // Configure API route for Vercel
-export const config = {
+const config = {
   api: {
     bodyParser: false,
   },
@@ -438,7 +436,7 @@ async function handleSupabaseStorageUpload(
 }
 
 // Main API handler - SUPPORT BOTH DIRECT UPLOAD AND SUPABASE STORAGE
-export default async function handler(req, res) {
+async function handler(req, res) {
   // Set CORS headers first
   setCORSHeaders(res);
 
@@ -626,3 +624,6 @@ export default async function handler(req, res) {
     });
   }
 }
+
+module.exports = handler;
+module.exports.config = config;
