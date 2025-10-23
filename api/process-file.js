@@ -1,11 +1,10 @@
-// File Processor API - Updated with formidable v2.1.1
+// File Processor API - Supabase Storage Only (No formidable)
 const { createClient } = require("@supabase/supabase-js");
 const XLSX = require("xlsx");
 const csv = require("csv-parser");
 const fs = require("fs-extra");
 const path = require("path");
 const fetch = require("node-fetch");
-const formidable = require("formidable");
 
 // Supabase configuration
 const supabaseUrl = "https://tphpqptsskwnjtlsgrwj.supabase.co";
@@ -467,145 +466,33 @@ async function handler(req, res) {
       startTime: new Date().toISOString(),
     });
 
-    // Check if this is a Supabase Storage URL request
-    if (req.headers["content-type"]?.includes("application/json")) {
-      const body = JSON.parse(req.body);
-      const { fileUrl, fileName, fileType } = body;
-
-      if (fileUrl) {
-        // Handle Supabase Storage URL
-        await handleSupabaseStorageUpload(
-          req,
-          res,
-          jobId,
-          fileUrl,
-          fileName,
-          fileType
-        );
-        return; // Ensure we don't continue to formidable
-      }
-    }
-
-    // Handle direct file upload (original method)
-    const form = formidable({
-      maxFileSize: 4 * 1024 * 1024, // 4MB limit - Vercel's actual limit
-      uploadDir: "/tmp",
-      keepExtensions: true,
-      maxFields: 1000,
-      maxFieldsSize: 1 * 1024 * 1024, // 1MB for fields
-    });
-
-    const [fields, files] = await form.parse(req);
-
-    if (!files.file || !files.file[0]) {
-      jobs.set(jobId, {
-        ...jobs.get(jobId),
-        status: "error",
-        message: "No file uploaded",
-      });
-      return res.status(400).json({ error: "No file uploaded", jobId });
-    }
-
-    const file = files.file[0];
-    const filePath = file.filepath;
-    const originalName = file.originalFilename;
-    const fileExtension = path.extname(originalName).toLowerCase();
-
-    // Validate file type
-    if (![".xlsx", ".csv"].includes(fileExtension)) {
-      jobs.set(jobId, {
-        ...jobs.get(jobId),
-        status: "error",
-        message: "Invalid file type",
-      });
+    // Only handle Supabase Storage URL requests
+    if (!req.headers["content-type"]?.includes("application/json")) {
       return res.status(400).json({
-        error: "Invalid file type. Please upload XLSX or CSV files only.",
+        error: "This API only accepts Supabase Storage URLs. Please send JSON with fileUrl, fileName, and fileType.",
         jobId,
       });
     }
 
-    // Update job status
-    jobs.set(jobId, {
-      ...jobs.get(jobId),
-      status: "parsing",
-      progress: 5,
-      message: "Parsing file...",
-    });
+    const body = JSON.parse(req.body);
+    const { fileUrl, fileName, fileType } = body;
 
-    // Process the file based on type
-    let headers, rows;
-
-    if (fileExtension === ".xlsx") {
-      ({ headers, rows } = await processXLSX(filePath));
-    } else if (fileExtension === ".csv") {
-      ({ headers, rows } = await processCSV(filePath));
+    if (!fileUrl) {
+      return res.status(400).json({
+        error: "fileUrl is required. Please provide a Supabase Storage URL.",
+        jobId,
+      });
     }
 
-    // Update job with file info
-    jobs.set(jobId, {
-      ...jobs.get(jobId),
-      status: "processing",
-      progress: 10,
-      message: `File parsed: ${rows.length} rows, ${headers.length} columns`,
-      totalRows: rows.length,
-    });
-
-    console.log(
-      `Processing ${rows.length} rows with ${headers.length} columns`
-    );
-
-    // Create JSON batches
-    const batches = await createJSONBatches(rows, headers, jobId);
-    console.log(`Created ${batches.length} JSON batches`);
-
-    // Seed data to Supabase
-    const seedResults = await seedToSupabase(batches, jobId);
-
-    // Clean up temporary files
-    await fs.remove(filePath);
-    for (const batch of batches) {
-      await fs.remove(batch.filePath);
-    }
-
-    // Calculate final results
-    const successCount = seedResults.filter(
-      (r) => r.status === "success"
-    ).length;
-    const errorCount = seedResults.filter((r) => r.status === "error").length;
-    const totalRowsProcessed = seedResults.reduce(
-      (sum, r) => sum + r.rowsInserted,
-      0
-    );
-
-    // Mark job as completed
-    jobs.set(jobId, {
-      ...jobs.get(jobId),
-      status: "completed",
-      progress: 100,
-      message: "Processing completed successfully",
-      endTime: new Date().toISOString(),
-      results: {
-        totalRows: rows.length,
-        totalBatches: batches.length,
-        successfulBatches: successCount,
-        failedBatches: errorCount,
-        totalRowsInserted: totalRowsProcessed,
-      },
-    });
-
-    res.status(200).json({
-      success: true,
-      message: "File processed successfully",
+    // Handle Supabase Storage URL
+    await handleSupabaseStorageUpload(
+      req,
+      res,
       jobId,
-      summary: {
-        totalRows: rows.length,
-        totalBatches: batches.length,
-        successfulBatches: successCount,
-        failedBatches: errorCount,
-        totalRowsInserted: totalRowsProcessed,
-      },
-      batchResults: seedResults,
-    });
+      fileUrl,
+      fileName,
+      fileType
+    );
   } catch (error) {
     console.error("Error processing file:", error);
 
