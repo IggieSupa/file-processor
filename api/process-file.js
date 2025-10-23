@@ -312,7 +312,9 @@ async function processCSVFromUrl(fileUrl) {
     const text = await response.text();
     const lines = text.split("\n");
     const headers = lines[0].split(",").map((h) => h.trim());
-    const rows = lines.slice(1).map((line) => line.split(",").map((cell) => cell.trim()));
+    const rows = lines
+      .slice(1)
+      .map((line) => line.split(",").map((cell) => cell.trim()));
     return { headers, rows };
   } catch (error) {
     throw new Error(`Error processing CSV file: ${error.message}`);
@@ -320,7 +322,14 @@ async function processCSVFromUrl(fileUrl) {
 }
 
 // Function to handle Supabase Storage URL uploads
-async function handleSupabaseStorageUpload(req, res, jobId, fileUrl, fileName, fileType) {
+async function handleSupabaseStorageUpload(
+  req,
+  res,
+  jobId,
+  fileUrl,
+  fileName,
+  fileType
+) {
   try {
     // Update job status
     jobs.set(jobId, {
@@ -354,7 +363,9 @@ async function handleSupabaseStorageUpload(req, res, jobId, fileUrl, fileName, f
       totalRows: rows.length,
     });
 
-    console.log(`Processing ${rows.length} rows with ${headers.length} columns`);
+    console.log(
+      `Processing ${rows.length} rows with ${headers.length} columns`
+    );
 
     // Create JSON batches
     const batches = await createJSONBatches(rows, headers, jobId);
@@ -364,9 +375,14 @@ async function handleSupabaseStorageUpload(req, res, jobId, fileUrl, fileName, f
     const seedResults = await seedToSupabase(batches, jobId);
 
     // Calculate final results
-    const successCount = seedResults.filter((r) => r.status === "success").length;
+    const successCount = seedResults.filter(
+      (r) => r.status === "success"
+    ).length;
     const errorCount = seedResults.filter((r) => r.status === "error").length;
-    const totalRowsProcessed = seedResults.reduce((sum, r) => sum + r.rowsInserted, 0);
+    const totalRowsProcessed = seedResults.reduce(
+      (sum, r) => sum + r.rowsInserted,
+      0
+    );
 
     // Mark job as completed
     jobs.set(jobId, {
@@ -446,12 +462,20 @@ export default async function handler(req, res) {
     });
 
     // Check if this is a Supabase Storage URL request
-    if (req.headers['content-type']?.includes('application/json')) {
-      const { fileUrl, fileName, fileType } = req.body;
-      
+    if (req.headers["content-type"]?.includes("application/json")) {
+      const body = JSON.parse(req.body);
+      const { fileUrl, fileName, fileType } = body;
+
       if (fileUrl) {
         // Handle Supabase Storage URL
-        return await handleSupabaseStorageUpload(req, res, jobId, fileUrl, fileName, fileType);
+        return await handleSupabaseStorageUpload(
+          req,
+          res,
+          jobId,
+          fileUrl,
+          fileName,
+          fileType
+        );
       }
     }
 
