@@ -262,7 +262,7 @@ async function seedToSupabase(batches, jobId) {
   return results;
 }
 
-// Main API handler
+// Main API handler for Supabase Storage uploads
 export default async function handler(req, res) {
   // Set CORS headers first
   setCORSHeaders(res);
