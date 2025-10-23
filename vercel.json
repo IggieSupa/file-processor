@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/process-file.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/process-file",
+      "dest": "/api/process-file.js"
+    }
+  ],
+  "functions": {
+    "api/process-file.js": {
+      "maxDuration": 300
+    }
+  }
+}

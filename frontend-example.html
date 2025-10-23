@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>File Upload with Progress</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .upload-area {
+        border: 2px dashed #ddd;
+        border-radius: 10px;
+        padding: 40px;
+        text-align: center;
+        margin-bottom: 20px;
+        transition: border-color 0.3s;
+      }
+      .upload-area.dragover {
+        border-color: #007bff;
+        background-color: #f8f9fa;
+      }
+      .file-input {
+        display: none;
+      }
+      .upload-btn {
+        background: #007bff;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      .upload-btn:hover {
+        background: #0056b3;
+      }
+      .upload-btn:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+      }
+      .progress-container {
+        margin-top: 20px;
+        display: none;
+      }
+      .progress-bar {
+        width: 100%;
+        height: 20px;
+        background-color: #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #007bff, #28a745);
+        width: 0%;
+        transition: width 0.3s ease;
+      }
+      .progress-text {
+        margin-top: 10px;
+        text-align: center;
+        font-weight: bold;
+      }
+      .status {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 5px;
+        display: none;
+      }
+      .status.success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .status.error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .status.info {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+      }
+      .job-details {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        display: none;
+      }
+      .job-details h3 {
+        margin-top: 0;
+      }
+      .job-details p {
+        margin: 5px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>File Upload with Real-time Progress</h1>
+
+      <div class="upload-area" id="uploadArea">
+        <h3>Upload XLSX or CSV File</h3>
+        <p>Drag and drop your file here or click to select</p>
+        <input
+          type="file"
+          id="fileInput"
+          class="file-input"
+          accept=".xlsx,.csv"
+        />
+        <button
+          class="upload-btn"
+          id="uploadBtn"
+          onclick="document.getElementById('fileInput').click()"
+        >
+          Choose File
+        </button>
+      </div>
+
+      <div class="progress-container" id="progressContainer">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">0%</div>
+      </div>
+
+      <div class="status" id="status"></div>
+
+      <div class="job-details" id="jobDetails">
+        <h3>Processing Details</h3>
+        <p><strong>Status:</strong> <span id="jobStatus">-</span></p>
+        <p><strong>Message:</strong> <span id="jobMessage">-</span></p>
+        <p><strong>Progress:</strong> <span id="jobProgress">0%</span></p>
+        <p><strong>Batches:</strong> <span id="jobBatches">-</span></p>
+        <p><strong>Rows:</strong> <span id="jobRows">-</span></p>
+      </div>
+    </div>
+
+    <script>
+      const uploadArea = document.getElementById("uploadArea");
+      const fileInput = document.getElementById("fileInput");
+      const uploadBtn = document.getElementById("uploadBtn");
+      const progressContainer = document.getElementById("progressContainer");
+      const progressFill = document.getElementById("progressFill");
+      const progressText = document.getElementById("progressText");
+      const status = document.getElementById("status");
+      const jobDetails = document.getElementById("jobDetails");
+
+      // Job status elements
+      const jobStatus = document.getElementById("jobStatus");
+      const jobMessage = document.getElementById("jobMessage");
+      const jobProgress = document.getElementById("jobProgress");
+      const jobBatches = document.getElementById("jobBatches");
+      const jobRows = document.getElementById("jobRows");
+
+      let currentJobId = null;
+      let eventSource = null;
+
+      // Drag and drop functionality
+      uploadArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        uploadArea.classList.add("dragover");
+      });
+
+      uploadArea.addEventListener("dragleave", () => {
+        uploadArea.classList.remove("dragover");
+      });
+
+      uploadArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove("dragover");
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          fileInput.files = files;
+          handleFileSelect();
+        }
+      });
+
+      fileInput.addEventListener("change", handleFileSelect);
+
+      function handleFileSelect() {
+        const file = fileInput.files[0];
+        if (file) {
+          uploadBtn.textContent = `Upload ${file.name}`;
+          uploadBtn.disabled = false;
+        }
+      }
+
+      uploadBtn.addEventListener("click", async () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        // Validate file type
+        const validTypes = [".xlsx", ".csv"];
+        const fileExtension = "." + file.name.split(".").pop().toLowerCase();
+        if (!validTypes.includes(fileExtension)) {
+          showStatus("Please select a valid XLSX or CSV file.", "error");
+          return;
+        }
+
+        // Start upload
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = "Uploading...";
+        progressContainer.style.display = "block";
+        jobDetails.style.display = "block";
+        hideStatus();
+
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          const response = await fetch("/api/process-file", {
+            method: "POST",
+            body: formData,
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            currentJobId = result.jobId;
+            showStatus(
+              "File uploaded successfully! Processing started...",
+              "info"
+            );
+            startProgressTracking();
+          } else {
+            throw new Error(result.message || "Upload failed");
+          }
+        } catch (error) {
+          showStatus(`Upload failed: ${error.message}`, "error");
+          resetUpload();
+        }
+      });
+
+      function startProgressTracking() {
+        if (!currentJobId) return;
+
+        // Close existing connection
+        if (eventSource) {
+          eventSource.close();
+        }
+
+        // Start SSE connection
+        eventSource = new EventSource(`/api/progress?jobId=${currentJobId}`);
+
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            handleProgressUpdate(data);
+          } catch (error) {
+            console.error("Error parsing progress data:", error);
+          }
+        };
+
+        eventSource.onerror = (error) => {
+          console.error("SSE connection error:", error);
+          // Fallback to polling
+          startPolling();
+        };
+      }
+
+      function startPolling() {
+        if (!currentJobId) return;
+
+        const pollInterval = setInterval(async () => {
+          try {
+            const response = await fetch(
+              `/api/job-status?jobId=${currentJobId}`
+            );
+            const result = await response.json();
+
+            if (response.ok) {
+              handleProgressUpdate({ type: "progress", ...result.job });
+            } else {
+              clearInterval(pollInterval);
+              showStatus("Job not found", "error");
+            }
+          } catch (error) {
+            console.error("Polling error:", error);
+          }
+        }, 2000);
+
+        // Store interval ID for cleanup
+        eventSource = { close: () => clearInterval(pollInterval) };
+      }
+
+      function handleProgressUpdate(data) {
+        if (data.type === "connected") {
+          console.log("Connected to progress stream");
+          return;
+        }
+
+        if (data.type === "ping") {
+          return;
+        }
+
+        if (data.type === "progress") {
+          updateProgress(data);
+        }
+
+        if (data.type === "final") {
+          updateProgress(data);
+          handleJobComplete(data);
+        }
+
+        if (data.type === "error") {
+          showStatus(`Error: ${data.message}`, "error");
+          resetUpload();
+        }
+      }
+
+      function updateProgress(data) {
+        const progress = Math.round(data.progress || 0);
+        progressFill.style.width = `${progress}%`;
+        progressText.textContent = `${progress}%`;
+
+        // Update job details
+        jobStatus.textContent = data.status || "-";
+        jobMessage.textContent = data.message || "-";
+        jobProgress.textContent = `${progress}%`;
+        jobBatches.textContent = data.currentBatch
+          ? `${data.currentBatch}/${data.totalBatches}`
+          : "-";
+        jobRows.textContent = data.totalRows
+          ? data.totalRows.toLocaleString()
+          : "-";
+      }
+
+      function handleJobComplete(data) {
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
+        }
+
+        if (data.status === "completed") {
+          showStatus("File processed successfully!", "success");
+          updateProgress({ progress: 100 });
+
+          // Show results
+          if (data.results) {
+            const results = data.results;
+            jobMessage.textContent = `Completed: ${results.totalRowsInserted.toLocaleString()} rows inserted in ${
+              results.totalBatches
+            } batches`;
+          }
+        } else if (data.status === "error") {
+          showStatus(`Processing failed: ${data.message}`, "error");
+        }
+
+        resetUpload();
+      }
+
+      function showStatus(message, type) {
+        status.textContent = message;
+        status.className = `status ${type}`;
+        status.style.display = "block";
+      }
+
+      function hideStatus() {
+        status.style.display = "none";
+      }
+
+      function resetUpload() {
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = "Choose File";
+        fileInput.value = "";
+        currentJobId = null;
+      }
+
+      // Cleanup on page unload
+      window.addEventListener("beforeunload", () => {
+        if (eventSource) {
+          eventSource.close();
+        }
+      });
+    </script>
+  </body>
+</html>
