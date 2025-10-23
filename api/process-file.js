@@ -1,10 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 import XLSX from "xlsx";
 import csv from "csv-parser";
-import { formidable } from "formidable";
 import fs from "fs-extra";
 import path from "path";
 import fetch from "node-fetch";
+
+// Use require for formidable as it doesn't support ES modules properly
+const formidable = require("formidable").default;
 
 // Supabase configuration
 const supabaseUrl = "https://tphpqptsskwnjtlsgrwj.supabase.co";
@@ -180,9 +182,9 @@ async function processCSVFromUrl(fileUrl) {
     const text = await response.text();
     const lines = text.split("\n");
     const headers = lines[0].split(",").map((h) => h.trim());
-    const rows = lines.slice(1).map((line) =>
-      line.split(",").map((cell) => cell.trim())
-    );
+    const rows = lines
+      .slice(1)
+      .map((line) => line.split(",").map((cell) => cell.trim()));
 
     return { headers, rows };
   } catch (error) {
@@ -325,7 +327,6 @@ function setCORSHeaders(res) {
     "Content-Length, Content-Type"
   );
 }
-
 
 // Function to handle Supabase Storage URL uploads - Updated
 async function handleSupabaseStorageUpload(
