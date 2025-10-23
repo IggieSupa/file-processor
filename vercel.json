@@ -36,6 +36,9 @@
     "api/upload-chunk.js": {
       "maxDuration": 300
     },
+    "api/upload-stream.js": {
+      "maxDuration": 300
+    },
     "api/progress.js": {
       "maxDuration": 300
     },
