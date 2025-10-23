@@ -33,13 +33,10 @@
     "api/process-file.js": {
       "maxDuration": 300
     },
-    "api/upload-chunk.js": {
+    "api/process-file-v2.js": {
       "maxDuration": 300
     },
-    "api/upload-stream.js": {
-      "maxDuration": 300
-    },
-    "api/upload-supabase.js": {
+    "api/simple-process.js": {
       "maxDuration": 300
     },
     "api/progress.js": {
