@@ -4,7 +4,7 @@ const csv = require("csv-parser");
 const fs = require("fs-extra");
 const path = require("path");
 const fetch = require("node-fetch");
-const formidable = require("formidable").default; // Fixed formidable import
+const formidable = require("formidable");
 
 // Supabase configuration
 const supabaseUrl = "https://tphpqptsskwnjtlsgrwj.supabase.co";
