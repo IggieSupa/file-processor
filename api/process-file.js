@@ -262,13 +262,13 @@ async function seedToSupabase(batches, jobId) {
 
 // Main API handler
 export default async function handler(req, res) {
-  // Add CORS headers - must be set before any response
+  // CORS headers - MUST be set first
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.setHeader('Access-Control-Max-Age', '86400');
 
-  // Handle preflight requests
+  // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
