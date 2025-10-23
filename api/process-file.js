@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import XLSX from "xlsx";
 import csv from "csv-parser";
-import formidable from "formidable";
+import { formidable } from "formidable";
 import fs from "fs-extra";
 import path from "path";
 import fetch from "node-fetch";
