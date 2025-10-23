@@ -1,7 +1,4 @@
 const { createClient } = require("@supabase/supabase-js");
-const formidable = require("formidable");
-const fs = require("fs-extra");
-const path = require("path");
 const XLSX = require("xlsx");
 const csv = require("csv-parser");
 
@@ -109,10 +106,17 @@ function cleanData(row, headers) {
   return cleanedRow;
 }
 
-// Function to process XLSX file
-async function processXLSX(filePath) {
+// Function to process XLSX file from URL
+async function processXLSXFromUrl(fileUrl) {
   try {
-    const workbook = XLSX.readFile(filePath);
+    // Download the file from Supabase Storage
+    const response = await fetch(fileUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to download file: ${response.statusText}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const workbook = XLSX.read(arrayBuffer, { type: "array" });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
@@ -130,29 +134,25 @@ async function processXLSX(filePath) {
   }
 }
 
-// Function to process CSV file
-async function processCSV(filePath) {
-  return new Promise((resolve, reject) => {
-    const results = [];
-    const headers = [];
-    let isFirstRow = true;
+// Function to process CSV file from URL
+async function processCSVFromUrl(fileUrl) {
+  try {
+    const response = await fetch(fileUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to download file: ${response.statusText}`);
+    }
 
-    fs.createReadStream(filePath)
-      .pipe(csv())
-      .on("data", (data) => {
-        if (isFirstRow) {
-          headers.push(...Object.keys(data));
-          isFirstRow = false;
-        }
-        results.push(Object.values(data));
-      })
-      .on("end", () => {
-        resolve({ headers, rows: results });
-      })
-      .on("error", (error) => {
-        reject(new Error(`Error processing CSV file: ${error.message}`));
-      });
-  });
+    const text = await response.text();
+    const lines = text.split("\n");
+    const headers = lines[0].split(",").map((h) => h.trim());
+    const rows = lines
+      .slice(1)
+      .map((line) => line.split(",").map((cell) => cell.trim()));
+
+    return { headers, rows };
+  } catch (error) {
+    throw new Error(`Error processing CSV file: ${error.message}`);
+  }
 }
 
 // Function to create JSON batches with progress tracking
@@ -184,16 +184,10 @@ async function createJSONBatches(rows, headers, jobId, batchSize = 1000) {
       data: processedRows,
     };
 
-    const fileName = `outlets_batch_${i + 1}_of_${totalBatches}.json`;
-    const filePath = path.join("/tmp", fileName);
-
-    await fs.writeJson(filePath, batchData, { spaces: 2 });
-
     batches.push({
-      fileName,
-      filePath,
       batchNumber: i + 1,
       rowCount: processedRows.length,
+      data: batchData,
     });
 
     // Update progress
@@ -224,12 +218,10 @@ async function seedToSupabase(batches, jobId) {
   for (let i = 0; i < batches.length; i++) {
     const batch = batches[i];
     try {
-      const batchData = await fs.readJson(batch.filePath);
-
       // Insert data into Supabase
       const { data, error } = await supabase
         .from("outlets")
-        .insert(batchData.data);
+        .insert(batch.data.data);
 
       if (error) {
         throw error;
@@ -272,7 +264,7 @@ async function seedToSupabase(batches, jobId) {
   return results;
 }
 
-// Main API handler
+// Main API handler for Supabase Storage uploads
 export default async function handler(req, res) {
   // Set CORS headers first
   setCORSHeaders(res);
@@ -290,56 +282,32 @@ export default async function handler(req, res) {
   const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   try {
+    // Parse request body
+    const { fileUrl, fileName, fileType } = req.body;
+
+    if (!fileUrl) {
+      return res.status(400).json({
+        error:
+          "No file URL provided. Please upload file to Supabase Storage first.",
+        instructions: {
+          step1: "Upload your file to Supabase Storage using the frontend",
+          step2: "Get the public URL of the uploaded file",
+          step3: "Send the URL to this endpoint",
+        },
+      });
+    }
+
     // Initialize job
     jobs.set(jobId, {
       id: jobId,
-      status: "uploading",
+      status: "downloading",
       progress: 0,
-      message: "Processing file upload...",
+      message: "Downloading file from Supabase Storage...",
       totalBatches: 0,
       currentBatch: 0,
       totalRows: 0,
-      rowsProcessed: 0,
       startTime: new Date().toISOString(),
     });
-
-    // Parse the form data with larger limits for better performance
-    const form = formidable({
-      maxFileSize: 50 * 1024 * 1024, // 50MB limit - Vercel can handle this
-      uploadDir: "/tmp",
-      keepExtensions: true,
-      maxFields: 1000,
-      maxFieldsSize: 10 * 1024 * 1024, // 10MB for fields
-    });
-
-    const [fields, files] = await form.parse(req);
-
-    if (!files.file || !files.file[0]) {
-      jobs.set(jobId, {
-        ...jobs.get(jobId),
-        status: "error",
-        message: "No file uploaded",
-      });
-      return res.status(400).json({ error: "No file uploaded", jobId });
-    }
-
-    const file = files.file[0];
-    const filePath = file.filepath;
-    const originalName = file.originalFilename;
-    const fileExtension = path.extname(originalName).toLowerCase();
-
-    // Validate file type
-    if (![".xlsx", ".csv"].includes(fileExtension)) {
-      jobs.set(jobId, {
-        ...jobs.get(jobId),
-        status: "error",
-        message: "Invalid file type",
-      });
-      return res.status(400).json({
-        error: "Invalid file type. Please upload XLSX or CSV files only.",
-        jobId,
-      });
-    }
 
     // Update job status
     jobs.set(jobId, {
@@ -351,11 +319,17 @@ export default async function handler(req, res) {
 
     // Process the file based on type
     let headers, rows;
+    const fileExtension = fileType || fileName?.split(".").pop()?.toLowerCase();
 
-    if (fileExtension === ".xlsx") {
-      ({ headers, rows } = await processXLSX(filePath));
-    } else if (fileExtension === ".csv") {
-      ({ headers, rows } = await processCSV(filePath));
+    if (fileExtension === "xlsx") {
+      ({ headers, rows } = await processXLSXFromUrl(fileUrl));
+    } else if (fileExtension === "csv") {
+      ({ headers, rows } = await processCSVFromUrl(fileUrl));
+    } else {
+      return res.status(400).json({
+        error: "Invalid file type. Please upload XLSX or CSV files only.",
+        jobId,
+      });
     }
 
     // Update job with file info
@@ -377,12 +351,6 @@ export default async function handler(req, res) {
 
     // Seed data to Supabase
     const seedResults = await seedToSupabase(batches, jobId);
-
-    // Clean up temporary files
-    await fs.remove(filePath);
-    for (const batch of batches) {
-      await fs.remove(batch.filePath);
-    }
 
     // Calculate final results
     const successCount = seedResults.filter(
