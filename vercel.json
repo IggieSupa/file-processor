@@ -30,20 +30,8 @@
     }
   ],
   "functions": {
-    "api/process-file.js": {
+    "api/process-clean.js": {
       "maxDuration": 300
-    },
-    "api/process-file-v2.js": {
-      "maxDuration": 300
-    },
-    "api/simple-process.js": {
-      "maxDuration": 300
-    },
-    "api/progress.js": {
-      "maxDuration": 300
-    },
-    "api/job-status.js": {
-      "maxDuration": 30
     }
   }
 }
