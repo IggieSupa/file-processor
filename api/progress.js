@@ -1,10 +1,10 @@
 // Server-Sent Events endpoint for real-time progress updates
 export default async function handler(req, res) {
-  // Add CORS headers
+  // Add CORS headers - must be set before any response
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Cache-Control');
+  res.setHeader('Access-Control-Max-Age', '86400');
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
