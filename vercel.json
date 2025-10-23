@@ -31,8 +31,7 @@
   ],
   "functions": {
     "api/process-file.js": {
-      "maxDuration": 300,
-      "maxRequestBodySize": "50mb"
+      "maxDuration": 300
     },
     "api/progress.js": {
       "maxDuration": 300
