@@ -1,4 +1,6 @@
-// File Processor API - Supabase Storage Only (No formidable)
+// File Processor API - Supabase Storage Only (No formidable) - V2
+// This API only processes files from Supabase Storage URLs
+// No direct file uploads supported - use Supabase Storage first
 const { createClient } = require("@supabase/supabase-js");
 const XLSX = require("xlsx");
 const csv = require("csv-parser");
