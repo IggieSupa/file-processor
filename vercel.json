@@ -39,6 +39,9 @@
     "api/upload-stream.js": {
       "maxDuration": 300
     },
+    "api/upload-supabase.js": {
+      "maxDuration": 300
+    },
     "api/progress.js": {
       "maxDuration": 300
     },
