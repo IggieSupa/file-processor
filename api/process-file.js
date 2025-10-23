@@ -279,7 +279,142 @@ function setCORSHeaders(res) {
   );
 }
 
-// Main API handler - TEST DEPLOYMENT
+// Function to process XLSX file from URL
+async function processXLSXFromUrl(fileUrl) {
+  try {
+    const response = await fetch(fileUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to download file: ${response.statusText}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const workbook = XLSX.read(arrayBuffer, { type: "array" });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    if (jsonData.length === 0) {
+      throw new Error("No data found in the file");
+    }
+    const headers = jsonData[0];
+    const rows = jsonData.slice(1);
+    return { headers, rows };
+  } catch (error) {
+    throw new Error(`Error processing XLSX file: ${error.message}`);
+  }
+}
+
+// Function to process CSV file from URL
+async function processCSVFromUrl(fileUrl) {
+  try {
+    const response = await fetch(fileUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to download file: ${response.statusText}`);
+    }
+    const text = await response.text();
+    const lines = text.split("\n");
+    const headers = lines[0].split(",").map((h) => h.trim());
+    const rows = lines.slice(1).map((line) => line.split(",").map((cell) => cell.trim()));
+    return { headers, rows };
+  } catch (error) {
+    throw new Error(`Error processing CSV file: ${error.message}`);
+  }
+}
+
+// Function to handle Supabase Storage URL uploads
+async function handleSupabaseStorageUpload(req, res, jobId, fileUrl, fileName, fileType) {
+  try {
+    // Update job status
+    jobs.set(jobId, {
+      ...jobs.get(jobId),
+      status: "downloading",
+      progress: 5,
+      message: "Downloading file from Supabase Storage...",
+    });
+
+    // Process the file based on type
+    let headers, rows;
+    const fileExtension = fileType || fileName?.split(".").pop()?.toLowerCase();
+
+    if (fileExtension === "xlsx") {
+      ({ headers, rows } = await processXLSXFromUrl(fileUrl));
+    } else if (fileExtension === "csv") {
+      ({ headers, rows } = await processCSVFromUrl(fileUrl));
+    } else {
+      return res.status(400).json({
+        error: "Invalid file type. Please upload XLSX or CSV files only.",
+        jobId,
+      });
+    }
+
+    // Update job with file info
+    jobs.set(jobId, {
+      ...jobs.get(jobId),
+      status: "processing",
+      progress: 10,
+      message: `File parsed: ${rows.length} rows, ${headers.length} columns`,
+      totalRows: rows.length,
+    });
+
+    console.log(`Processing ${rows.length} rows with ${headers.length} columns`);
+
+    // Create JSON batches
+    const batches = await createJSONBatches(rows, headers, jobId);
+    console.log(`Created ${batches.length} JSON batches`);
+
+    // Seed data to Supabase
+    const seedResults = await seedToSupabase(batches, jobId);
+
+    // Calculate final results
+    const successCount = seedResults.filter((r) => r.status === "success").length;
+    const errorCount = seedResults.filter((r) => r.status === "error").length;
+    const totalRowsProcessed = seedResults.reduce((sum, r) => sum + r.rowsInserted, 0);
+
+    // Mark job as completed
+    jobs.set(jobId, {
+      ...jobs.get(jobId),
+      status: "completed",
+      progress: 100,
+      message: "Processing completed successfully",
+      endTime: new Date().toISOString(),
+      results: {
+        totalRows: rows.length,
+        totalBatches: batches.length,
+        successfulBatches: successCount,
+        failedBatches: errorCount,
+        totalRowsInserted: totalRowsProcessed,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "File processed successfully from Supabase Storage",
+      jobId,
+      summary: {
+        totalRows: rows.length,
+        totalBatches: batches.length,
+        successfulBatches: successCount,
+        failedBatches: errorCount,
+        totalRowsInserted: totalRowsProcessed,
+      },
+      batchResults: seedResults,
+    });
+  } catch (error) {
+    console.error("Error processing Supabase Storage file:", error);
+    jobs.set(jobId, {
+      ...jobs.get(jobId),
+      status: "error",
+      progress: 0,
+      message: error.message,
+      endTime: new Date().toISOString(),
+    });
+    res.status(500).json({
+      error: "Internal server error",
+      message: error.message,
+      jobId,
+    });
+  }
+}
+
+// Main API handler - SUPPORT BOTH DIRECT UPLOAD AND SUPABASE STORAGE
 export default async function handler(req, res) {
   // Set CORS headers first
   setCORSHeaders(res);
@@ -310,13 +445,23 @@ export default async function handler(req, res) {
       startTime: new Date().toISOString(),
     });
 
-    // Parse the form data
+    // Check if this is a Supabase Storage URL request
+    if (req.headers['content-type']?.includes('application/json')) {
+      const { fileUrl, fileName, fileType } = req.body;
+      
+      if (fileUrl) {
+        // Handle Supabase Storage URL
+        return await handleSupabaseStorageUpload(req, res, jobId, fileUrl, fileName, fileType);
+      }
+    }
+
+    // Handle direct file upload (original method)
     const form = formidable({
-      maxFileSize: 50 * 1024 * 1024, // 50MB limit - more reasonable for Vercel
+      maxFileSize: 4 * 1024 * 1024, // 4MB limit - Vercel's actual limit
       uploadDir: "/tmp",
       keepExtensions: true,
       maxFields: 1000,
-      maxFieldsSize: 10 * 1024 * 1024, // 10MB for fields
+      maxFieldsSize: 1 * 1024 * 1024, // 1MB for fields
     });
 
     const [fields, files] = await form.parse(req);
