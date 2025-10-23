@@ -15,7 +15,7 @@ global.jobs = jobs;
 
 const config = {
   api: {
-    bodyParser: false,
+    bodyParser: true,
   },
 };
 
