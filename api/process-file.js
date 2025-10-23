@@ -279,7 +279,7 @@ function setCORSHeaders(res) {
   );
 }
 
-// Main API handler
+// Main API handler - TEST DEPLOYMENT
 export default async function handler(req, res) {
   // Set CORS headers first
   setCORSHeaders(res);
