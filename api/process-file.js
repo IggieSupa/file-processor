@@ -468,7 +468,7 @@ export default async function handler(req, res) {
 
       if (fileUrl) {
         // Handle Supabase Storage URL
-        return await handleSupabaseStorageUpload(
+        await handleSupabaseStorageUpload(
           req,
           res,
           jobId,
@@ -476,6 +476,7 @@ export default async function handler(req, res) {
           fileName,
           fileType
         );
+        return; // Ensure we don't continue to formidable
       }
     }
 
