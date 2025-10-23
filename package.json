@@ -4,18 +4,22 @@
   "description": "Node.js backend service for processing XLSX/CSV files and creating JSON batches for Supabase",
   "main": "api/process-file.js",
   "scripts": {
-    "dev": "vercel dev",
+    "dev": "node test-server.js",
     "build": "echo 'No build step required'",
     "start": "node api/process-file.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
-    "xlsx": "^0.18.5",
+    "cors": "^2.8.5",
     "csv-parser": "^3.0.0",
-    "multer": "^1.4.5-lts.1",
+    "express": "^5.1.0",
+    "form-data": "^4.0.4",
     "formidable": "^3.5.1",
     "fs-extra": "^11.2.0",
-    "path": "^0.12.7"
+    "multer": "^1.4.5-lts.1",
+    "node-fetch": "^3.3.2",
+    "path": "^0.12.7",
+    "xlsx": "^0.18.5"
   },
   "engines": {
     "node": ">=18.0.0"
