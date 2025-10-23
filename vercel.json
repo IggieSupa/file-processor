@@ -36,6 +36,15 @@
     "api/process-clean.js": {
       "maxDuration": 300
     },
+    "api/process-working.js": {
+      "maxDuration": 300
+    },
+    "api/test-dependencies.js": {
+      "maxDuration": 30
+    },
+    "api/test-deployment.js": {
+      "maxDuration": 30
+    },
     "api/progress.js": {
       "maxDuration": 300
     },
