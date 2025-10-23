@@ -1,10 +1,16 @@
-// Server-Sent Events endpoint for real-time progress updates
-export default async function handler(req, res) {
-  // CORS headers - MUST be set first
+// CORS middleware function
+function setCORSHeaders(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control');
   res.setHeader('Access-Control-Max-Age', '86400');
+  res.setHeader('Access-Control-Allow-Credentials', 'false');
+}
+
+// Server-Sent Events endpoint for real-time progress updates
+export default async function handler(req, res) {
+  // Set CORS headers first
+  setCORSHeaders(res);
 
   // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
