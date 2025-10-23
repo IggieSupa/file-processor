@@ -327,7 +327,7 @@ function setCORSHeaders(res) {
 }
 
 
-// Function to handle Supabase Storage URL uploads
+// Function to handle Supabase Storage URL uploads - Updated
 async function handleSupabaseStorageUpload(
   req,
   res,
