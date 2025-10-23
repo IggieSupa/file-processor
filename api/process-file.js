@@ -5,7 +5,7 @@ import fs from "fs-extra";
 import path from "path";
 import fetch from "node-fetch";
 
-// Use require for formidable as it doesn't support ES modules properly
+// Use require for formidable as it doesn't support ES modules properly - Fixed
 const formidable = require("formidable").default;
 
 // Supabase configuration
