@@ -1,10 +1,10 @@
-const { createClient } = require("@supabase/supabase-js");
-const XLSX = require("xlsx");
-const csv = require("csv-parser");
-const formidable = require("formidable");
-const fs = require("fs-extra");
-const path = require("path");
-const fetch = require("node-fetch");
+import { createClient } from "@supabase/supabase-js";
+import XLSX from "xlsx";
+import csv from "csv-parser";
+import formidable from "formidable";
+import fs from "fs-extra";
+import path from "path";
+import fetch from "node-fetch";
 
 // Supabase configuration
 const supabaseUrl = "https://tphpqptsskwnjtlsgrwj.supabase.co";
