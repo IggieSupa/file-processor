@@ -303,11 +303,11 @@ export default async function handler(req, res) {
 
     // Parse the form data
     const form = formidable({
-      maxFileSize: 100 * 1024 * 1024, // 100MB limit
+      maxFileSize: 50 * 1024 * 1024, // 50MB limit - more reasonable for Vercel
       uploadDir: "/tmp",
       keepExtensions: true,
       maxFields: 1000,
-      maxFieldsSize: 20 * 1024 * 1024, // 20MB for fields
+      maxFieldsSize: 10 * 1024 * 1024, // 10MB for fields
     });
 
     const [fields, files] = await form.parse(req);

@@ -294,13 +294,13 @@ export default async function handler(req, res) {
       startTime: new Date().toISOString(),
     });
 
-    // Parse the form data with smaller limits for chunked upload
+    // Parse the form data with larger limits for better performance
     const form = formidable({
-      maxFileSize: 10 * 1024 * 1024, // 10MB limit per chunk
+      maxFileSize: 50 * 1024 * 1024, // 50MB limit - Vercel can handle this
       uploadDir: "/tmp",
       keepExtensions: true,
       maxFields: 1000,
-      maxFieldsSize: 2 * 1024 * 1024, // 2MB for fields
+      maxFieldsSize: 10 * 1024 * 1024, // 10MB for fields
     });
 
     const [fields, files] = await form.parse(req);
