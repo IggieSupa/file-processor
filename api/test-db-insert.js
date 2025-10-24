@@ -23,23 +23,14 @@ async function handler(req, res) {
   }
 
   try {
-    // Test 1: Check if outlets table exists and get its schema
-    const { data: tables, error: tablesError } = await supabase
-      .from("information_schema.tables")
-      .select("table_name")
-      .eq("table_schema", "public")
-      .ilike("table_name", "%outlet%");
+    // Test 1: Try to select from outlets table to see if it exists
+    const { data: selectData, error: selectError } = await supabase
+      .from("outlets")
+      .select("*")
+      .limit(1);
 
-    // Test 2: Try to get table schema
-    const { data: columns, error: columnsError } = await supabase
-      .from("information_schema.columns")
-      .select("column_name, data_type, is_nullable")
-      .eq("table_schema", "public")
-      .eq("table_name", "outlets");
-
-    // Test 3: Try a simple insert with minimal data
+    // Test 2: Try a simple insert with minimal data
     const testData = {
-      id: 1,
       name: "Test Outlet",
       created_at: new Date().toISOString()
     };
@@ -49,26 +40,28 @@ async function handler(req, res) {
       .insert([testData])
       .select();
 
-    // Test 4: Check RLS policies
-    const { data: policies, error: policiesError } = await supabase
-      .from("pg_policies")
-      .select("tablename, policyname, permissive, roles, cmd, qual")
-      .eq("tablename", "outlets");
+    // Test 3: Try to get table info using a different approach
+    const { data: tableInfo, error: tableInfoError } = await supabase
+      .rpc('get_table_columns', { table_name: 'outlets' });
 
     res.status(200).json({
       success: true,
       tests: {
-        tables: tables || [],
-        tablesError: tablesError?.message,
-        columns: columns || [],
-        columnsError: columnsError?.message,
+        selectTest: {
+          data: selectData,
+          error: selectError?.message,
+          details: selectError
+        },
         insertTest: {
           data: insertData,
           error: insertError?.message,
           details: insertError
         },
-        policies: policies || [],
-        policiesError: policiesError?.message
+        tableInfo: {
+          data: tableInfo,
+          error: tableInfoError?.message,
+          details: tableInfoError
+        }
       }
     });
 
