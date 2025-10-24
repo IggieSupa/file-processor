@@ -20,7 +20,7 @@ async function handler(req, res) {
 
   try {
     // Process the Excel file
-    const fileUrl = "https://tphpqptsskwnjtlsgrwj.supabase.co/storage/v1/object/public/outlet-imports/uploads/1761243273971-jv2kz.xlsx";
+    const fileUrl = "https://tphpqptsskwnjtlsgrwj.supabase.co/storage/v1/object/public/outlet-imports/uploads/1761280094356-xtjrcl.xlsx";
     
     const response = await fetch(fileUrl);
     const arrayBuffer = await response.arrayBuffer();
