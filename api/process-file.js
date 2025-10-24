@@ -22,7 +22,7 @@ global.jobs = jobs;
 // Configure API route for Vercel
 const config = {
   api: {
-    bodyParser: false,
+    bodyParser: true,
   },
 };
 
@@ -476,7 +476,7 @@ async function handler(req, res) {
       });
     }
 
-    const body = JSON.parse(req.body);
+    const body = req.body;
     const { fileUrl, fileName, fileType } = body;
 
     if (!fileUrl) {
