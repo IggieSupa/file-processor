@@ -149,11 +149,27 @@ async function processCSV(filePath) {
 // Function to process XLSX file from URL
 async function processXLSXFromUrl(fileUrl) {
   try {
-    const response = await fetch(fileUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to download file: ${response.statusText}`);
+    // Extract file path from URL
+    const urlParts = fileUrl.split('/storage/v1/object/public/');
+    if (urlParts.length !== 2) {
+      throw new Error('Invalid Supabase Storage URL format');
     }
-    const arrayBuffer = await response.arrayBuffer();
+    
+    const filePath = urlParts[1];
+    const pathParts = filePath.split('/');
+    const bucketName = pathParts[0];
+    const fileName = pathParts.slice(1).join('/');
+    
+    // Download file using Supabase client
+    const { data, error } = await supabase.storage
+      .from(bucketName)
+      .download(fileName);
+    
+    if (error) {
+      throw new Error(`Failed to download file: ${error.message}`);
+    }
+    
+    const arrayBuffer = await data.arrayBuffer();
     const workbook = XLSX.read(arrayBuffer, { type: "array" });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
@@ -175,11 +191,27 @@ async function processXLSXFromUrl(fileUrl) {
 // Function to process CSV file from URL
 async function processCSVFromUrl(fileUrl) {
   try {
-    const response = await fetch(fileUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to download file: ${response.statusText}`);
+    // Extract file path from URL
+    const urlParts = fileUrl.split('/storage/v1/object/public/');
+    if (urlParts.length !== 2) {
+      throw new Error('Invalid Supabase Storage URL format');
     }
-    const text = await response.text();
+    
+    const filePath = urlParts[1];
+    const pathParts = filePath.split('/');
+    const bucketName = pathParts[0];
+    const fileName = pathParts.slice(1).join('/');
+    
+    // Download file using Supabase client
+    const { data, error } = await supabase.storage
+      .from(bucketName)
+      .download(fileName);
+    
+    if (error) {
+      throw new Error(`Failed to download file: ${error.message}`);
+    }
+    
+    const text = await data.text();
     const lines = text.split("\n");
     const headers = lines[0].split(",").map((h) => h.trim());
     const rows = lines
