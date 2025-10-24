@@ -2,7 +2,8 @@
 const { createClient } = require("@supabase/supabase-js");
 
 const supabaseUrl = "https://tphpqptsskwnjtlsgrwj.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwaHBxcHRzc2t3bmp0bHNncndqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Njg4MzgwNiwiZXhwIjoyMDcyNDU5ODA2fQ.jc4SR2v3HIBGUMHQDYE9BcAzbo8PGkUDWFmNr2eSN4s";
+const supabaseKey =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwaHBxcHRzc2t3bmp0bHNncndqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Njg4MzgwNiwiZXhwIjoyMDcyNDU5ODA2fQ.jc4SR2v3HIBGUMHQDYE9BcAzbo8PGkUDWFmNr2eSN4s";
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -32,23 +33,23 @@ async function handler(req, res) {
     if (selectError) {
       return res.status(500).json({
         error: "Failed to get sample data",
-        message: selectError.message
+        message: selectError.message,
       });
     }
 
-    const actualColumns = sampleData && sampleData[0] ? Object.keys(sampleData[0]) : [];
+    const actualColumns =
+      sampleData && sampleData[0] ? Object.keys(sampleData[0]) : [];
 
     res.status(200).json({
       success: true,
       actualColumns: actualColumns,
-      sampleData: sampleData[0]
+      sampleData: sampleData[0],
     });
-
   } catch (error) {
     res.status(500).json({
       error: "Test failed",
       message: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
   }
 }

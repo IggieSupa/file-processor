@@ -4,7 +4,8 @@ const XLSX = require("xlsx");
 const fetch = require("node-fetch");
 
 const supabaseUrl = "https://tphpqptsskwnjtlsgrwj.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwaHBxcHRzc2t3bmp0bHNncndqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Njg4MzgwNiwiZXhwIjoyMDcyNDU5ODA2fQ.jc4SR2v3HIBGUMHQDYE9BcAzbo8PGkUDWFmNr2eSN4s";
+const supabaseKey =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwaHBxcHRzc2t3bmp0bHNncndqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Njg4MzgwNiwiZXhwIjoyMDcyNDU5ODA2fQ.jc4SR2v3HIBGUMHQDYE9BcAzbo8PGkUDWFmNr2eSN4s";
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -100,8 +101,9 @@ async function handler(req, res) {
 
   try {
     // Get a sample file and process it to see what columns we create
-    const fileUrl = "https://tphpqptsskwnjtlsgrwj.supabase.co/storage/v1/object/public/outlet-imports/uploads/1761243273971-jv2kz.xlsx";
-    
+    const fileUrl =
+      "https://tphpqptsskwnjtlsgrwj.supabase.co/storage/v1/object/public/outlet-imports/uploads/1761243273971-jv2kz.xlsx";
+
     // Download and process the file
     const response = await fetch(fileUrl);
     const arrayBuffer = await response.arrayBuffer();
@@ -117,7 +119,7 @@ async function handler(req, res) {
     const originalHeaders = headers;
 
     // Show converted headers
-    const convertedHeaders = headers.map(h => toSnakeCase(h));
+    const convertedHeaders = headers.map((h) => toSnakeCase(h));
 
     // Show cleaned data for first row
     const cleanedData = cleanData(sampleRow, headers);
@@ -128,7 +130,8 @@ async function handler(req, res) {
       .select("*")
       .limit(1);
 
-    const actualDbColumns = dbColumns && dbColumns[0] ? Object.keys(dbColumns[0]) : [];
+    const actualDbColumns =
+      dbColumns && dbColumns[0] ? Object.keys(dbColumns[0]) : [];
 
     res.status(200).json({
       success: true,
@@ -139,17 +142,20 @@ async function handler(req, res) {
         actualDbColumns: actualDbColumns.slice(0, 10), // First 10 DB columns
         dbError: dbError?.message,
         columnMismatch: {
-          missingInDb: convertedHeaders.filter(col => !actualDbColumns.includes(col)).slice(0, 10),
-          missingInData: actualDbColumns.filter(col => !convertedHeaders.includes(col)).slice(0, 10)
-        }
-      }
+          missingInDb: convertedHeaders
+            .filter((col) => !actualDbColumns.includes(col))
+            .slice(0, 10),
+          missingInData: actualDbColumns
+            .filter((col) => !convertedHeaders.includes(col))
+            .slice(0, 10),
+        },
+      },
     });
-
   } catch (error) {
     res.status(500).json({
       error: "Test failed",
       message: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
   }
 }

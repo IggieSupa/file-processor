@@ -34,12 +34,108 @@ function toSnakeCase(str) {
     .replace(/^_/, "");
 }
 
+// Mapping from Excel headers to database column names
+const headerMapping = {
+  // Common mappings - adjust based on your actual Excel headers
+  "Outlet Name": "outlet_name",
+  "Outlet": "outlet_name", 
+  "Name": "outlet_name",
+  "STP": "stp",
+  "Sales Region": "sales_region",
+  "Sales District": "sales_district",
+  "Sales District Code": "sales_district_code",
+  "Plant": "plant",
+  "Plant Code": "plant_code",
+  "Sales Area": "sales_area",
+  "Sales Area Code": "sales_area_code",
+  "Sales Team": "sales_team",
+  "Sales Team Code": "sales_team_code",
+  "Sales Sector": "sales_sector",
+  "Sales Sector Code": "sales_sector_code",
+  "Sales Contact Name": "sales_contact_name",
+  "Sales Contact Surname": "sales_contact_surnam",
+  "Sales Contact Telephone": "sales_contact_teleph",
+  "Sold To Party": "sold_to_party",
+  "Street Name": "street_name",
+  "Street": "street_name",
+  "Address": "street_name",
+  "BAS Street 4": "bas_street_4",
+  "BAS Street 5": "bas_street_5",
+  "Latitude": "latitude",
+  "Longitude": "longitude",
+  "Postal Code": "postal_code",
+  "Geographical Location": "geographical_location",
+  "Licence Type": "licence_type",
+  "License Type": "licence_type",
+  "License Number": "license_number",
+  "Licence Number": "license_number",
+  "Created On": "created_on",
+  "Account Group Code": "account_group_code",
+  "Account Group": "account_group",
+  "Segment": "segment",
+  "Sub Segment": "sub_segment",
+  "Beer Category Strategy": "beer_category_strategy",
+  "Local Channel": "local_channel",
+  "Call Frequency": "call_frequency",
+  "National Group Code": "national_group_code",
+  "National Group": "national_group",
+  "Regional Group": "regional_group",
+  "Regional Group Code": "regional_group_code",
+  "Dead Dying Indicator": "dead_dying_indicator",
+  "TSP Call Frequency": "tsp_call_frequency",
+  "TSP Call Duration": "tsp_call_duration",
+  "TSP Rep Type": "tsp_rep_type",
+  "HE Outlet": "he_outlet",
+  "Delivery Code": "delivery_code",
+  "Merchandising Call": "merchandising_call",
+  "Bees Registered": "bees_registered",
+  "Bees Registration Date": "bees_registration_date",
+  "Licence Expiry Date 1": "licence_expiry_date_1",
+  "License Expiry Date 1": "licence_expiry_date_1",
+  "Payer Number": "payer_number",
+  "Payment Terms": "payment_terms",
+  "Payment Method": "payment_method",
+  "License Expiry Date 2": "license_expiry_date_2",
+  "Delivery Long": "delivery_long",
+  "Delivery Lat": "delivery_lat",
+  "Delivery Longitude": "delivery_long",
+  "Delivery Latitude": "delivery_lat",
+  "Ind Delivery On Mon": "ind_delivery_on_mon",
+  "Ind Delivery On Tue": "ind_delivery_on_tue",
+  "Ind Delivery On Wed": "ind_delivery_on_wed",
+  "Ind Delivery On Thu": "ind_delivery_on_thu",
+  "Ind Delivery On Fri": "ind_delivery_on_fri",
+  "Ind Delivery On Sat": "ind_delivery_on_sat",
+  "Ind Delivery On Sun": "ind_delivery_on_sun",
+  "Draught Outlet": "draught_outlet",
+  "Fridge Outlet": "fridge_outlet"
+};
+
+// Function to map Excel header to database column name
+function mapHeaderToColumn(header) {
+  // First try exact match
+  if (headerMapping[header]) {
+    return headerMapping[header];
+  }
+  
+  // Try case-insensitive match
+  const lowerHeader = header.toLowerCase().trim();
+  for (const [excelHeader, dbColumn] of Object.entries(headerMapping)) {
+    if (excelHeader.toLowerCase().trim() === lowerHeader) {
+      return dbColumn;
+    }
+  }
+  
+  // If no match found, convert to snake_case and return
+  return toSnakeCase(header);
+}
+
 // Helper function to clean and validate data
 function cleanData(row, headers) {
   const cleanedRow = {};
 
   headers.forEach((header, index) => {
-    const key = toSnakeCase(header);
+    const key = mapHeaderToColumn(header);
     let value = row[index] || row[header] || null;
 
     // Clean up the value
