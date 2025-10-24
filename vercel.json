@@ -57,12 +57,6 @@
     "api/test-single-insert.js": {
       "maxDuration": 30
     },
-    "api/debug-excel-data.js": {
-      "maxDuration": 30
-    },
-    "api/debug-raw-excel.js": {
-      "maxDuration": 30
-    },
     "api/test-real-excel.js": {
       "maxDuration": 30
     }
