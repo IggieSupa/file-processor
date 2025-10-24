@@ -248,16 +248,8 @@ async function handler(req, res) {
       startTime: new Date().toISOString(),
     });
 
-    // Parse JSON body
-    let body;
-    try {
-      body = JSON.parse(req.body);
-    } catch (error) {
-      return res.status(400).json({
-        error: "Invalid JSON body",
-        jobId,
-      });
-    }
+    // Get body (already parsed with bodyParser: true)
+    const body = req.body;
 
     const { fileUrl, fileName, fileType } = body;
 
