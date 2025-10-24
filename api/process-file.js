@@ -15,9 +15,7 @@ const supabaseKey =
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// In-memory job tracking (in production, use Redis or database)
-const jobs = global.jobs || new Map();
-global.jobs = jobs;
+// Job tracking removed - not needed for serverless environment
 
 // Configure API route for Vercel
 const config = {
@@ -224,19 +222,10 @@ async function processCSVFromUrl(fileUrl) {
   }
 }
 
-// Function to create JSON batches with progress tracking
-async function createJSONBatches(rows, headers, jobId, batchSize = 1000) {
+// Function to create JSON batches
+async function createJSONBatches(rows, headers, batchSize = 1000) {
   const batches = [];
   const totalBatches = Math.ceil(rows.length / batchSize);
-
-  // Update job progress
-  jobs.set(jobId, {
-    ...jobs.get(jobId),
-    status: "processing",
-    totalBatches,
-    currentBatch: 0,
-    progress: 0,
-  });
 
   for (let i = 0; i < totalBatches; i++) {
     const start = i * batchSize;
@@ -264,31 +253,15 @@ async function createJSONBatches(rows, headers, jobId, batchSize = 1000) {
       batchNumber: i + 1,
       rowCount: processedRows.length,
     });
-
-    // Update progress
-    const progress = Math.round(((i + 1) / totalBatches) * 50); // 50% for processing
-    jobs.set(jobId, {
-      ...jobs.get(jobId),
-      currentBatch: i + 1,
-      progress,
-      message: `Processed batch ${i + 1}/${totalBatches}`,
-    });
   }
 
   return batches;
 }
 
-// Function to seed data to Supabase with progress tracking
-async function seedToSupabase(batches, jobId) {
+// Function to seed data to Supabase
+async function seedToSupabase(batches) {
   const results = [];
   const totalBatches = batches.length;
-
-  // Update job status to seeding
-  jobs.set(jobId, {
-    ...jobs.get(jobId),
-    status: "seeding",
-    message: "Starting to seed data to Supabase...",
-  });
 
   for (let i = 0; i < batches.length; i++) {
     const batch = batches[i];
@@ -310,30 +283,12 @@ async function seedToSupabase(batches, jobId) {
         rowsInserted: batch.rowCount,
         message: `Successfully inserted ${batch.rowCount} rows`,
       });
-
-      // Update progress (50% + 50% for seeding)
-      const progress = 50 + Math.round(((i + 1) / totalBatches) * 50);
-      jobs.set(jobId, {
-        ...jobs.get(jobId),
-        currentBatch: i + 1,
-        progress,
-        message: `Seeded batch ${i + 1}/${totalBatches} to Supabase`,
-      });
     } catch (error) {
       results.push({
         batchNumber: batch.batchNumber,
         status: "error",
         rowsInserted: 0,
         message: `Error inserting batch: ${error.message}`,
-      });
-
-      // Update progress even on error
-      const progress = 50 + Math.round(((i + 1) / totalBatches) * 50);
-      jobs.set(jobId, {
-        ...jobs.get(jobId),
-        currentBatch: i + 1,
-        progress,
-        message: `Error in batch ${i + 1}/${totalBatches}`,
       });
     }
   }
@@ -364,20 +319,11 @@ function setCORSHeaders(res) {
 async function handleSupabaseStorageUpload(
   req,
   res,
-  jobId,
   fileUrl,
   fileName,
   fileType
 ) {
   try {
-    // Update job status
-    jobs.set(jobId, {
-      ...jobs.get(jobId),
-      status: "downloading",
-      progress: 5,
-      message: "Downloading file from Supabase Storage...",
-    });
-
     // Process the file based on type
     let headers, rows;
     const fileExtension = fileType || fileName?.split(".").pop()?.toLowerCase();
@@ -389,29 +335,19 @@ async function handleSupabaseStorageUpload(
     } else {
       return res.status(400).json({
         error: "Invalid file type. Please upload XLSX or CSV files only.",
-        jobId,
       });
     }
-
-    // Update job with file info
-    jobs.set(jobId, {
-      ...jobs.get(jobId),
-      status: "processing",
-      progress: 10,
-      message: `File parsed: ${rows.length} rows, ${headers.length} columns`,
-      totalRows: rows.length,
-    });
 
     console.log(
       `Processing ${rows.length} rows with ${headers.length} columns`
     );
 
     // Create JSON batches
-    const batches = await createJSONBatches(rows, headers, jobId);
+    const batches = await createJSONBatches(rows, headers);
     console.log(`Created ${batches.length} JSON batches`);
 
     // Seed data to Supabase
-    const seedResults = await seedToSupabase(batches, jobId);
+    const seedResults = await seedToSupabase(batches);
 
     // Calculate final results
     const successCount = seedResults.filter(
@@ -423,26 +359,9 @@ async function handleSupabaseStorageUpload(
       0
     );
 
-    // Mark job as completed
-    jobs.set(jobId, {
-      ...jobs.get(jobId),
-      status: "completed",
-      progress: 100,
-      message: "Processing completed successfully",
-      endTime: new Date().toISOString(),
-      results: {
-        totalRows: rows.length,
-        totalBatches: batches.length,
-        successfulBatches: successCount,
-        failedBatches: errorCount,
-        totalRowsInserted: totalRowsProcessed,
-      },
-    });
-
     res.status(200).json({
       success: true,
       message: "File processed successfully from Supabase Storage",
-      jobId,
       summary: {
         totalRows: rows.length,
         totalBatches: batches.length,
@@ -454,17 +373,9 @@ async function handleSupabaseStorageUpload(
     });
   } catch (error) {
     console.error("Error processing Supabase Storage file:", error);
-    jobs.set(jobId, {
-      ...jobs.get(jobId),
-      status: "error",
-      progress: 0,
-      message: error.message,
-      endTime: new Date().toISOString(),
-    });
     res.status(500).json({
       error: "Internal server error",
       message: error.message,
-      jobId,
     });
   }
 }
@@ -484,27 +395,12 @@ async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
   try {
-    // Initialize job
-    jobs.set(jobId, {
-      id: jobId,
-      status: "uploading",
-      progress: 0,
-      message: "Processing file upload...",
-      totalBatches: 0,
-      currentBatch: 0,
-      totalRows: 0,
-      rowsProcessed: 0,
-      startTime: new Date().toISOString(),
-    });
 
     // Only handle Supabase Storage URL requests
     if (!req.headers["content-type"]?.includes("application/json")) {
       return res.status(400).json({
         error: "This API only accepts Supabase Storage URLs. Please send JSON with fileUrl, fileName, and fileType.",
-        jobId,
       });
     }
 
@@ -514,7 +410,6 @@ async function handler(req, res) {
     if (!fileUrl) {
       return res.status(400).json({
         error: "fileUrl is required. Please provide a Supabase Storage URL.",
-        jobId,
       });
     }
 
@@ -522,7 +417,6 @@ async function handler(req, res) {
     await handleSupabaseStorageUpload(
       req,
       res,
-      jobId,
       fileUrl,
       fileName,
       fileType
@@ -530,19 +424,9 @@ async function handler(req, res) {
   } catch (error) {
     console.error("Error processing file:", error);
 
-    // Mark job as failed
-    jobs.set(jobId, {
-      ...jobs.get(jobId),
-      status: "error",
-      progress: 0,
-      message: error.message,
-      endTime: new Date().toISOString(),
-    });
-
     res.status(500).json({
       error: "Internal server error",
       message: error.message,
-      jobId,
     });
   }
 }

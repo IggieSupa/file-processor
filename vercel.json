@@ -45,10 +45,7 @@
     "api/test-deployment.js": {
       "maxDuration": 30
     },
-    "api/progress.js": {
-      "maxDuration": 300
-    },
-    "api/job-status.js": {
+    "api/test-supabase.js": {
       "maxDuration": 30
     }
   }
