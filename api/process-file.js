@@ -11,7 +11,7 @@ const fetch = require("node-fetch");
 // Supabase configuration
 const supabaseUrl = "https://tphpqptsskwnjtlsgrwj.supabase.co";
 const supabaseKey =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwaHBxcHRzc2t3bmp0bHNncndqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4ODM4MDYsImV4cCI6MjA3MjQ1OTgwNn0.Za_gtehw-0gNdvzHWshXKXiS7AkDON6kSOKCDpsReJg";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwaHBxcHRzc2t3bmp0bHNncndqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Njg4MzgwNiwiZXhwIjoyMDcyNDU5ODA2fQ.jc4SR2v3HIBGUMHQDYE9BcAzbo8PGkUDWFmNr2eSN4s";
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
