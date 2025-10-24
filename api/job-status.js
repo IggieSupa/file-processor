@@ -9,7 +9,7 @@ function setCORSHeaders(res) {
 }
 
 // Job status endpoint for checking job progress
-export default async function handler(req, res) {
+async function handler(req, res) {
   // Set CORS headers first
   setCORSHeaders(res);
 
@@ -61,3 +61,5 @@ export default async function handler(req, res) {
 // Import jobs from the main file (in production, use shared storage)
 const jobs = global.jobs || new Map();
 global.jobs = jobs;
+
+module.exports = handler;
