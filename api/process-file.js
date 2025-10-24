@@ -149,7 +149,12 @@ async function processCSV(filePath) {
 // Function to process XLSX file from URL
 async function processXLSXFromUrl(fileUrl) {
   try {
-    const response = await fetch(fileUrl);
+    const response = await fetch(fileUrl, {
+      headers: {
+        'Authorization': `Bearer ${supabaseKey}`,
+        'apikey': supabaseKey
+      }
+    });
     if (!response.ok) {
       throw new Error(`Failed to download file: ${response.statusText}`);
     }
@@ -175,7 +180,12 @@ async function processXLSXFromUrl(fileUrl) {
 // Function to process CSV file from URL
 async function processCSVFromUrl(fileUrl) {
   try {
-    const response = await fetch(fileUrl);
+    const response = await fetch(fileUrl, {
+      headers: {
+        'Authorization': `Bearer ${supabaseKey}`,
+        'apikey': supabaseKey
+      }
+    });
     if (!response.ok) {
       throw new Error(`Failed to download file: ${response.statusText}`);
     }
