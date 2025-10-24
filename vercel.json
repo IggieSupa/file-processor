@@ -47,6 +47,24 @@
     },
     "api/test-supabase.js": {
       "maxDuration": 30
+    },
+    "api/test-db-insert.js": {
+      "maxDuration": 30
+    },
+    "api/get-db-schema.js": {
+      "maxDuration": 30
+    },
+    "api/test-single-insert.js": {
+      "maxDuration": 30
+    },
+    "api/debug-excel-data.js": {
+      "maxDuration": 30
+    },
+    "api/debug-raw-excel.js": {
+      "maxDuration": 30
+    },
+    "api/test-real-excel.js": {
+      "maxDuration": 30
     }
   }
 }
