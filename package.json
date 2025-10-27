@@ -1,35 +1,26 @@
 {
-  "name": "file-processor-backend",
+  "name": "file-processor-admin-dashboard",
   "version": "1.0.0",
-  "description": "Node.js backend service for processing XLSX/CSV files and creating JSON batches for Supabase",
-  "main": "api/process-file.js",
+  "description": "Admin dashboard for file processor backend service",
+  "main": "index.html",
   "scripts": {
-    "dev": "node test-server.js",
+    "start": "npx serve .",
+    "dev": "npx serve . -l 3000",
     "build": "echo 'No build step required'",
-    "start": "node api/process-file.js"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.39.0",
-    "cors": "^2.8.5",
-    "csv-parser": "^3.0.0",
-    "express": "^5.1.0",
-    "form-data": "^4.0.4",
-    "fs-extra": "^11.2.0",
-    "multer": "^1.4.5-lts.1",
-    "node-fetch": "^2.7.0",
-    "path": "^0.12.7",
-    "xlsx": "^0.18.5"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "deploy": "echo 'Deploy to your preferred hosting service'"
   },
   "keywords": [
-    "file-processing",
-    "xlsx",
-    "csv",
-    "supabase",
-    "vercel"
+    "admin",
+    "dashboard",
+    "file-processor",
+    "backend"
   ],
-  "author": "Your Name",
-  "license": "MIT"
+  "author": "File Processor Admin",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.1"
+  },
+  "dependencies": {
+    "pdf-parse": "^2.4.5"
+  }
 }

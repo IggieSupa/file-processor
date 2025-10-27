@@ -59,6 +59,9 @@
     },
     "api/test-real-excel.js": {
       "maxDuration": 30
+    },
+    "api/extract-pdf.js": {
+      "maxDuration": 60
     }
   }
 }
