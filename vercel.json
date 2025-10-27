@@ -39,25 +39,10 @@
     "api/process-working.js": {
       "maxDuration": 300
     },
-    "api/test-dependencies.js": {
-      "maxDuration": 30
-    },
-    "api/test-deployment.js": {
-      "maxDuration": 30
-    },
-    "api/test-supabase.js": {
-      "maxDuration": 30
-    },
-    "api/test-db-insert.js": {
-      "maxDuration": 30
+    "api/delete-all-outlets.js": {
+      "maxDuration": 60
     },
     "api/get-db-schema.js": {
-      "maxDuration": 30
-    },
-    "api/test-single-insert.js": {
-      "maxDuration": 30
-    },
-    "api/test-real-excel.js": {
       "maxDuration": 30
     },
     "api/extract-pdf.js": {
