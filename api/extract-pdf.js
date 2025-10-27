@@ -112,7 +112,7 @@ async function downloadPDFFromStorage(fileUrl) {
       .download(fileName);
 
     if (error) {
-      throw new Error(`Failed to download file: ${error.message}`);
+      throw new Error(`Failed to download file: ${JSON.stringify(error)}`);
     }
 
     // Convert data to buffer
@@ -143,34 +143,37 @@ async function handler(req, res) {
     if (!req.headers["content-type"]?.includes("application/json")) {
       return res.status(400).json({
         error:
-          "This API only accepts Supabase Storage URLs. Please send JSON with fileUrl and fileName.",
+          "This API accepts JSON with fileData (base64) or fileUrl (Supabase Storage URL).",
       });
     }
 
     const body = req.body;
-    const { fileUrl, fileName } = body;
+    const { fileUrl, fileName, fileData } = body;
 
-    if (!fileUrl) {
+    let pdfBuffer;
+    
+    // Handle base64 file data
+    if (fileData) {
+      pdfBuffer = Buffer.from(fileData, 'base64');
+    } else if (!fileUrl) {
       return res.status(400).json({
         error: "fileUrl is required. Please provide a Supabase Storage URL.",
       });
+    } else {
+      // Verify it's a PDF file
+      if (
+        !fileUrl.toLowerCase().endsWith(".pdf") &&
+        !fileName?.toLowerCase().endsWith(".pdf")
+      ) {
+        return res.status(400).json({
+          error: "This API only supports PDF files.",
+        });
+      }
+
+      console.log(`Downloading PDF from: ${fileUrl}`);
+      pdfBuffer = await downloadPDFFromStorage(fileUrl);
+      console.log(`PDF downloaded, size: ${pdfBuffer.length} bytes`);
     }
-
-    // Verify it's a PDF file
-    if (
-      !fileUrl.toLowerCase().endsWith(".pdf") &&
-      !fileName?.toLowerCase().endsWith(".pdf")
-    ) {
-      return res.status(400).json({
-        error: "This API only supports PDF files.",
-      });
-    }
-
-    console.log(`Downloading PDF from: ${fileUrl}`);
-
-    // Download PDF from Supabase Storage
-    const pdfBuffer = await downloadPDFFromStorage(fileUrl);
-    console.log(`PDF downloaded, size: ${pdfBuffer.length} bytes`);
 
     // Extract text from PDF
     const extractedData = await extractTextFromPDF(pdfBuffer);

@@ -727,16 +727,24 @@
           },
 
           async uploadToSupabase(file) {
-            // Mock upload - replace with actual Supabase upload
+            // Return the file directly - backend will handle it as base64
             return new Promise((resolve) => {
-              setTimeout(() => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
                 resolve({
                   success: true,
-                  url: `https://tphpqptsskwnjtlsgrwj.supabase.co/storage/v1/object/public/outlet-imports/uploads/${Date.now()}-${
-                    file.name
-                  }`,
+                  data: reader.result.split(',')[1], // Remove data:application/pdf;base64, prefix
+                  fileName: file.name,
+                  type: file.type,
                 });
-              }, 1000);
+              };
+              reader.onerror = () => {
+                resolve({
+                  success: false,
+                  error: 'Failed to read file',
+                });
+              };
+              reader.readAsDataURL(file);
             });
           },
 
@@ -890,8 +898,8 @@
                     "Content-Type": "application/json",
                   },
                   body: JSON.stringify({
-                    fileUrl: uploadResponse.url,
-                    fileName: file.name,
+                    fileData: uploadResponse.data,
+                    fileName: uploadResponse.fileName,
                   }),
                 }
               );
