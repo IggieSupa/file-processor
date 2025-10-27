@@ -1,7 +1,7 @@
 // PDF OCR Extraction API
 // This API extracts text from PDF files stored in Supabase Storage
 const { createClient } = require("@supabase/supabase-js");
-const pdfParse = require("pdf-parse");
+const PDFParser = require("pdf2json");
 
 // Supabase configuration
 const supabaseUrl = "https://tphpqptsskwnjtlsgrwj.supabase.co";
@@ -38,17 +38,58 @@ function setCORSHeaders(res) {
 
 // Function to extract text from PDF
 async function extractTextFromPDF(pdfBuffer) {
-  try {
-    const data = await pdfParse(pdfBuffer);
-    return {
-      text: data.text,
-      numPages: data.numpages,
-      info: data.info,
-      metadata: data.metadata,
-    };
-  } catch (error) {
-    throw new Error(`Failed to extract text from PDF: ${error.message}`);
-  }
+  return new Promise((resolve, reject) => {
+    try {
+      const pdfParser = new PDFParser(null, 1);
+      
+      pdfParser.on("pdfParser_dataError", (errData) => {
+        reject(new Error(`Failed to parse PDF: ${errData.parserError}`));
+      });
+
+      pdfParser.on("pdfParser_dataReady", (pdfData) => {
+        try {
+          // Extract text from all pages
+          let extractedText = "";
+          let numPages = 0;
+
+          if (pdfData.Pages && pdfData.Pages.length > 0) {
+            numPages = pdfData.Pages.length;
+            pdfData.Pages.forEach((page, index) => {
+              if (page.Texts && page.Texts.length > 0) {
+                page.Texts.forEach((text) => {
+                  if (text.R) {
+                    text.R.forEach((run) => {
+                      if (run.T) {
+                        // Decode URI component if needed
+                        try {
+                          extractedText += decodeURIComponent(run.T) + " ";
+                        } catch (e) {
+                          extractedText += run.T + " ";
+                        }
+                      }
+                    });
+                  }
+                });
+              }
+            });
+          }
+
+          resolve({
+            text: extractedText.trim(),
+            numPages: numPages,
+            info: pdfData.Meta || {},
+            metadata: {},
+          });
+        } catch (error) {
+          reject(new Error(`Failed to process PDF data: ${error.message}`));
+        }
+      });
+
+      pdfParser.parseBuffer(pdfBuffer);
+    } catch (error) {
+      reject(new Error(`Failed to extract text from PDF: ${error.message}`));
+    }
+  });
 }
 
 // Function to download PDF from Supabase Storage URL
