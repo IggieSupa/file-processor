@@ -21,6 +21,11 @@
     "serve": "^14.2.1"
   },
   "dependencies": {
-    "pdf-parse": "^2.4.5"
+    "@supabase/supabase-js": "^2.39.0",
+    "csv-parser": "^3.0.0",
+    "fs-extra": "^11.2.0",
+    "node-fetch": "^2.7.0",
+    "pdf-parse": "^2.4.5",
+    "xlsx": "^0.18.5"
   }
 }
