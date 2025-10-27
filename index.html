@@ -606,7 +606,7 @@
           async checkAPIStatus() {
             try {
               const response = await fetch(
-                "https://file-processor-git-main-ignatius-mutizwas-projects.vercel.app/api/test-deployment"
+                "https://file-processor-git-main-ignatius-mutizwas-projects.vercel.app/api/get-db-schema"
               );
               this.apiStatus = response.ok;
               this.apiEndpoints.test = response.ok;
@@ -799,7 +799,7 @@
           async testAPI() {
             try {
               const response = await fetch(
-                "https://file-processor-git-main-ignatius-mutizwas-projects.vercel.app/api/test-deployment"
+                "https://file-processor-git-main-ignatius-mutizwas-projects.vercel.app/api/get-db-schema"
               );
               const result = await response.json();
 
@@ -809,6 +809,13 @@
                   "API test successful",
                   "fas fa-vial",
                   "text-green-600"
+                );
+              } else {
+                alert("API test failed: " + (result.message || "Unknown error"));
+                this.addActivity(
+                  "API test failed",
+                  "fas fa-exclamation-triangle",
+                  "text-red-600"
                 );
               }
             } catch (error) {
